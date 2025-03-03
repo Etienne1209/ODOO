@@ -1,3 +1,18 @@
 version: '2'
-odoo:15
-postgre:13
+services:
+  web:
+    image: odoo:15
+    depends_on:
+      -mydb
+    ports:
+      - "8026:8026"
+    environment:
+      - HOST=yourt
+      - USER=yourt
+      - PASSWORD=myyourt
+  mydb:
+    image: postgres:13
+    environnement:
+    - POSTGRES_DB=postgres
+    - POSTGRES_PASSWORD=myodoo
+    - POSTGRES_USER=odoo
