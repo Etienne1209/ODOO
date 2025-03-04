@@ -7,4 +7,4 @@ version = common.version()
 
 print ("Connexion ODOO")
 print(f"@URL={erp_url}")
-print(f"Odoo version={version}")
+print(f"Odoo version={version['server_serie']}")
