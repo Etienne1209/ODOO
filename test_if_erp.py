@@ -8,10 +8,13 @@ import xmlrpc.client
 common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(erp_url))
 version = common.version()
 user_id = common.authenticate(erp_db,erp_user,erp_pwd,{})
-models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(erp_url))
-access = models.execute_kw(erp_db,user_id, erp_pwd,
-    'mrp.production','check_access_rights',
-    ['write'],{'raise_exception': False})
+if(user_id!=False):
+    models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(erp_url))
+    access = models.execute_kw(erp_db,user_id, erp_pwd,
+     'mrp.production','check_access_rights',
+     ['write'],{'raise_exception': False})
+else:
+    print(f'Odoo Server authentification rejected : DB={erp_db} User={erp_user}')
 
 print ("Connexion ODOO")
 print(f"@URL={erp_url}")
