@@ -8,9 +8,12 @@ import io  # Pour traiter les données d'image en mémoire
 import sys
 import datetime as dt
 
-# ---------------------------------------------
-# Intégration interface Odoo
-# ---------------------------------------------
+#=============================================================================================================================================================================
+#=============================================================================================================================================================================
+
+"""---------------------------
+# Intégration interface Odoo |
+"""---------------------------
 
 # Ajout du chemin si nécessaire pour inclure votre module 'IF_Odoo'
 sys.path.append("/home/Documents/Informatique_industrielle/PYTHON/07_ProjetPython_Odoo/odoo.py")
@@ -68,9 +71,13 @@ class App(tk.Tk):
         except Exception as e:
             print(f"Erreur de mise à jour de l'interface : {e}")
 
-# ---------------------------------------------
-# Fonction de gestion de la fenêtre principale
-# ---------------------------------------------
+#==========================================================================================================================================================================
+#==========================================================================================================================================================================
+
+"""---------------------------------------------
+# Fonction de gestion de la fenêtre principale |
+"""---------------------------------------------
+
 def ouvrir_fenetre_principale():
     global entry_login, entry_password, fenetre_connexion  # Déclaration des variables globales nécessaires
 
@@ -87,12 +94,12 @@ def ouvrir_fenetre_principale():
         fenetre_principale.config(bg="white")  # Fond d'écran blanc
 
         # Affichage du titre
-        label_erp = tk.Label(fenetre_principale, text="ERP de Yourt", font=("Arial", 32), fg="black", bg="white")
-        label_erp.pack(pady=10)
+        label_erp = tk.Label(fenetre_principale, text="ERP de Yourt", font=("Arial", 40), fg="black", bg="white")
+        label_erp.pack(pady=20)
 
-        # ---------------------------------------------
-        # Frame contenant les menus déroulants et le bouton de validation
-        # ---------------------------------------------
+        """ ---------------------------------------------------------------
+        # Frame contenant les menus déroulants et le bouton de validation |
+        """----------------------------------------------------------------
 
         frame_gauche = tk.Frame(fenetre_principale, bg="white")
         frame_gauche.pack(side="left", padx=20, pady=20, anchor="n")  # Frame à gauche et centrée verticalement
@@ -107,7 +114,7 @@ def ouvrir_fenetre_principale():
         # Menu déroulant pour le conditionnement
         variable_conditionnement = tk.StringVar(fenetre_principale)
         variable_conditionnement.set("4x1")
-        menu_conditionnement = tk.OptionMenu(frame_gauche, variable_conditionnement, "4x1", "2x1", "6x1")
+        menu_conditionnement = tk.OptionMenu(frame_gauche, variable_conditionnement,"4x1", "2x1")
         menu_conditionnement.config(font=("Arial", 15), width=10)  # Police de taille 15
         menu_conditionnement.pack(pady=30)  # Augmenter le padding vertical ici aussi
 
@@ -115,9 +122,9 @@ def ouvrir_fenetre_principale():
         bouton_validation = tk.Button(frame_gauche, text="Validation", command=envoyer_commande, font=("Arial", 18))
         bouton_validation.pack(pady=20)
 
-        # ---------------------------------------------
-        # Frame pour afficher l'image du produit
-        # ---------------------------------------------
+        """---------------------------------------
+        # Frame pour afficher l'image du produit |
+        """---------------------------------------
 
         frame_image = tk.Frame(fenetre_principale, bg="white")
         frame_image.pack(side="right", expand=True, padx=10, pady=10)
@@ -138,9 +145,13 @@ def ouvrir_fenetre_principale():
         # Si les identifiants sont incorrects, afficher un message d'erreur
         messagebox.showerror("Erreur", "L'identifiant ou le mot de passe n'est pas correct.")
 
-# ---------------------------------------------
-# Fonction pour afficher l'image en fonction du produit sélectionné
-# ---------------------------------------------
+#===============================================================================================================================================================================
+#===============================================================================================================================================================================
+
+"""------------------------------------------------------------------
+# Fonction pour afficher l'image en fonction du produit sélectionné |
+"""------------------------------------------------------------------
+
 def afficher_image(selection):
     """Cette fonction affiche une image en fonction du produit sélectionné."""
     try:
@@ -165,16 +176,23 @@ def afficher_image(selection):
         print(f"Erreur lors de l'affichage de l'image : {e}")
         messagebox.showerror("Erreur", f"Erreur lors de l'affichage de l'image : {e}")
 
-# ---------------------------------------------
-# Fonction d'envoi de la commande
-# ---------------------------------------------
+#===============================================================================================================================================================================
+#===============================================================================================================================================================================
+
+""" -------------------------------
+# Fonction d'envoi de la commande |
+"""--------------------------------
+
 def envoyer_commande():
     # Cette fonction peut être étendue pour envoyer les commandes à Odoo ou faire d'autres actions
     print("Commande envoyée !")
+    
+#===============================================================================================================================================================================
+#===============================================================================================================================================================================
 
-# ---------------------------------------------
-# Création de la fenêtre de connexion
-# ---------------------------------------------
+"""------------------------------------
+# Création de la fenêtre de connexion |
+"""------------------------------------
 
 fenetre_connexion = tk.Tk()
 fenetre_connexion.title("Fenêtre de Connexion")
