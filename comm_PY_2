@@ -1,0 +1,228 @@
+import tkinter as tk  # Assure-toi que ceci est bien en haut du fichier
+from tkinter import messagebox, ttk
+from pathlib import Path
+from PIL import Image, ImageTk
+import xmlrpc.client
+import datetime as dt
+
+class IF_Odoo:
+    """Classe permettant de se connecter à Odoo via XML-RPC."""
+    def __init__(self, ip, port, user, password, db):
+        self.ip = ip
+        self.port = port
+        self.user = user
+        self.password = password
+        self.db = db
+        self.url = f'http://{self.ip}:{self.port}'
+        self.common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
+        self.models = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
+        self.mOdooVersion = None
+
+    def connect(self):
+        """Connexion à Odoo."""
+        user_id = self.common.authenticate(self.db, self.user, self.password, {})
+        if user_id:
+            version = self.common.version()
+            self.mOdooVersion = version['server_serie']
+        else:
+            raise Exception("Échec de la connexion à Odoo.")
+
+    def create_order(self, product, quantity):
+        """Créer une commande dans Odoo."""
+        try:
+            # Utilisation de l'ID du produit et de la quantité pour créer la commande
+            product_id = self.models.execute_kw(self.db, 1, self.password, 'product.product', 'search', [[('name', '=', product)]])
+            if product_id:
+                product_id = product_id[0]  # Prendre le premier ID trouvé
+                order_data = {
+                    'product_id': product_id,
+                    'product_qty': quantity,
+                    'state': 'draft',  # Par exemple, état "brouillon"
+                }
+                order_id = self.models.execute_kw(self.db, 1, self.password, 'sale.order', 'create', [order_data])
+                print(f"Commande créée : {order_id}")
+                return order_id
+            else:
+                raise Exception("Produit non trouvé.")
+        except Exception as e:
+            print(f"Erreur lors de la création de la commande : {e}")
+            return None
+
+    def get_product_info(self, product_name):
+        """Récupère les informations d'un produit depuis Odoo."""
+        try:
+            product_id = self.models.execute_kw(self.db, 1, self.password, 'product.product', 'search', [[('name', '=', product_name)]])
+            if product_id:
+                product_id = product_id[0]
+                product_info = self.models.execute_kw(self.db, 1, self.password, 'product.product', 'read', [product_id], {'fields': ['name', 'list_price', 'default_code']})
+                return product_info[0] if product_info else None
+            else:
+                raise Exception("Produit non trouvé.")
+        except Exception as e:
+            print(f"Erreur lors de la récupération des infos produit : {e}")
+            return None
+
+
+class App(tk.Tk):
+    """Application GUI en Tkinter pour se connecter à Odoo et gérer les commandes."""
+    def __init__(self):
+        """Constructeur de l'application (héritage de l'objet Tk)"""
+        super().__init__()
+
+        self.db = "YOURT"  # Remplacer par le nom de ta base de données Odoo
+        try:
+            # Initialiser la connexion à Odoo via l'objet IF_Odoo
+            self.ifOdoo = IF_Odoo("172.31.10.137", "8026", "etienne.jugeur1209@gmail.com", "vxrq-rwjs-ejpz", self.db)
+        except Exception as e:
+            print(f"Erreur lors de l'initialisation de IF_Odoo : {e}")
+            messagebox.showerror("Erreur", f"Impossible d'initialiser la connexion à Odoo. {e}")
+            self.quit()
+
+        self.initWidgetOdoo()
+
+    def initWidgetOdoo(self):
+        """Initialisation des widgets pour Odoo"""
+        self.frmOdoo = ttk.Frame(self)
+        self.frmOdoo.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+
+        self.btnConnect = ttk.Button(self.frmOdoo, text="Connect", command=self.onBtnConnect)
+        self.btnConnect.pack()
+
+        self.lblStatusbar = tk.Label(self, text="Status : Disconnected", relief="sunken", anchor="w")
+        self.lblStatusbar.pack(side="bottom", fill="x")
+
+        # Initialisation de l'image
+        self.label_image = tk.Label(self.frmOdoo)
+        self.label_image.pack(pady=10)
+
+        # Menu pour sélectionner un produit
+        self.product_var = tk.StringVar(self)
+        self.product_var.set("Banane")  # Valeur par défaut
+
+        self.product_menu = ttk.OptionMenu(self.frmOdoo, self.product_var, "Banane", "Banane", "Fraise", "Kiwi")
+        self.product_menu.pack(pady=10)
+
+        self.btnAfficherImage = ttk.Button(self.frmOdoo, text="Afficher l'image", command=self.afficher_image)
+        self.btnAfficherImage.pack(pady=5)
+
+        self.btnEnvoyerCommande = ttk.Button(self.frmOdoo, text="Envoyer Commande", command=self.envoyer_commande)
+        self.btnEnvoyerCommande.pack(pady=5)
+
+    def onBtnConnect(self):
+        """Callback pour le bouton de connexion"""
+        try:
+            self.lblStatusbar.config(text=f'Status : Connexion en cours...')
+            self.btnConnect.config(cursor='watch')
+            self.update()
+
+            self.ifOdoo.connect()  # Connexion à Odoo
+
+            self.btnConnect.config(cursor='arrow')
+            self.lblStatusbar.config(text=f'Status : Odoo Version = {self.ifOdoo.mOdooVersion}')
+        except Exception as e:
+            self.btnConnect.config(cursor='arrow')
+            messagebox.showerror("Erreur", f"Échec de la connexion à Odoo : {e}")
+            self.lblStatusbar.config(text="Status : Erreur de connexion")
+
+    def update(self):
+        """Mettre à jour l'interface utilisateur"""
+        try:
+            date = dt.datetime.now()
+            date_str = f'[{date:%d-%m-%Y :: %H hrs %M min %S sec}]'
+            # Ajout de la ligne pour vérifier et afficher l'état de la connexion
+            if self.ifOdoo.mOdooVersion:
+                self.lblStatusbar.config(text=f'{date_str} Status : Connecté à Odoo Version = {self.ifOdoo.mOdooVersion}')
+            else:
+                self.lblStatusbar.config(text=f'{date_str} Status : Déconnecté')
+            
+            self.after(5000, self.update)  # Rafraîchit toutes les 5000 ms (5 secondes)
+        except Exception as e:
+            print(f"Erreur de mise à jour de l'interface : {e}")
+
+    def afficher_image(self):
+        """Cette fonction affiche une image en fonction du produit sélectionné."""
+        product_name = self.product_var.get()
+        product_info = self.ifOdoo.get_product_info(product_name)
+
+        if product_info:
+            image_path = f"images/{product_name.lower()}.png"  # Par exemple, crée un dossier "images"
+            try:
+                image = Image.open(image_path)
+                image = image.resize((200, 200))  # Redimensionner l'image
+                photo = ImageTk.PhotoImage(image)
+
+                # Afficher l'image
+                self.label_image.config(image=photo)
+                self.label_image.image = photo  # Garder une référence de l'image
+            except Exception as e:
+                print(f"Erreur lors de l'affichage de l'image : {e}")
+                messagebox.showerror("Erreur", f"Erreur lors de l'affichage de l'image : {e}")
+        else:
+            messagebox.showerror("Erreur", "Produit non trouvé dans Odoo.")
+
+    def envoyer_commande(self):
+        """Envoyer la commande à Odoo avec les informations saisies."""
+        try:
+            product = self.product_var.get()  # Récupérer le produit sélectionné
+            quantity = 100  # Exemple de quantité, tu peux la récupérer de l'interface utilisateur si besoin
+
+            order_id = self.ifOdoo.create_order(product, quantity)
+
+            if order_id:
+                messagebox.showinfo("Commande envoyée", f"La commande a été envoyée à Odoo. ID de commande : {order_id}")
+            else:
+                messagebox.showerror("Erreur", "La commande n'a pas pu être envoyée.")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de l'envoi de la commande : {e}")
+
+
+# Fenêtre de connexion à l'ERP
+fenetre_connexion = tk.Tk()
+fenetre_connexion.title("Fenêtre de Connexion")
+
+# Récupérer la taille de l'écran pour ajuster la fenêtre de connexion
+screen_width = fenetre_connexion.winfo_screenwidth()
+screen_height = fenetre_connexion.winfo_screenheight()
+
+# Ajuster la taille de la fenêtre pour qu'elle occupe tout l'écran
+fenetre_connexion.geometry(f"{screen_width}x{screen_height}")
+fenetre_connexion.config(bg="white")
+
+# Affichage du titre de l'application
+label_erp = tk.Label(fenetre_connexion, text="ERP de Yourt", font=("Arial", 35), fg="black", bg="white")
+label_erp.pack(pady=20)
+
+# Création d'un frame pour centrer les éléments de connexion
+frame_connexion = tk.Frame(fenetre_connexion, bg="white", bd=5, relief="solid", width=600, height=300)
+frame_connexion.place(relx=0.5, rely=0.5, anchor="center")
+
+# Champs de saisie pour le login et le mot de passe
+label_login = tk.Label(frame_connexion, text="Login:", bg="white", font=("Arial", 30))
+label_login.pack(pady=5)
+entry_login = tk.Entry(frame_connexion, font=("Arial", 30))
+entry_login.pack(pady=5)
+
+label_password = tk.Label(frame_connexion, text="Mot de passe:", bg="white", font=("Arial", 30))
+label_password.pack(pady=5)
+entry_password = tk.Entry(frame_connexion, show="*", font=("Arial", 30))
+entry_password.pack(pady=5)
+
+# Bouton pour se connecter et ouvrir la fenêtre principale
+button_connexion = tk.Button(frame_connexion, text="Connexion", command=lambda: ouvrir_fenetre_principale(), font=("Arial", 30))
+button_connexion.pack(pady=20)
+
+def ouvrir_fenetre_principale():
+    global entry_login, entry_password, fenetre_connexion
+
+    login = entry_login.get()
+    password = entry_password.get()
+
+    # Fermer la fenêtre de connexion et ouvrir la fenêtre principale
+    fenetre_connexion.destroy()
+
+    # Lancer l'application principale
+    app = App()
+    app.mainloop()
+
+# Lancer la fenêtre de connexion
+fenetre_connexion.mainloop()
